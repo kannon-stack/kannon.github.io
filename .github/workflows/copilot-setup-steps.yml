@@ -25,19 +25,15 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v5
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Set up Node
+        uses: actions/setup-node@v5
         with:
-          ruby-version: "3.3"
+          node-version: 24
+          cache: npm
 
-      # The repository has no Gemfile, so install the same gem set GitHub Pages
-      # builds with. webrick is needed for `jekyll serve` on Ruby 3.
-      - name: Install Jekyll and the GitHub Pages plugins
-        run: gem install github-pages webrick --no-document
+      - name: Install dependencies
+        run: npm ci
 
-      # A trial build proves the environment works before Copilot starts.
+      # A trial build (type check + Vite build) proves the environment works before Copilot starts.
       - name: Build the site
-        run: jekyll build --baseurl /kannon.github.io
-        env:
-          JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PAGES_REPO_NWO: ${{ github.repository }}
+        run: npm run build
