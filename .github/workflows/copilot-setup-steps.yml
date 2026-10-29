@@ -1,0 +1,43 @@
+name: "Copilot Setup Steps"
+
+# Runs automatically when this file changes, so the setup can be checked, and
+# can be run by hand from the repository's Actions tab.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  # The job must be called `copilot-setup-steps` or Copilot won't pick it up.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # Copilot gets its own token for its work, so this job only needs to read the code.
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      # The repository has no Gemfile, so install the same gem set GitHub Pages
+      # builds with. webrick is needed for `jekyll serve` on Ruby 3.
+      - name: Install Jekyll and the GitHub Pages plugins
+        run: gem install github-pages webrick --no-document
+
+      # A trial build proves the environment works before Copilot starts.
+      - name: Build the site
+        run: jekyll build --baseurl /kannon.github.io
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAGES_REPO_NWO: ${{ github.repository }}
