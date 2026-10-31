@@ -123,7 +123,7 @@ const recognition = [
 ];
 
 function MatrixGlyphs() {
-  const glyphs = ["01", "//", "[]", "<> ", "++", "::", "TX", "AG", "07", "_", "=", "{}"];
+  const glyphs = ["01", "//", "[]", "<> ", "++", "::", "TX", "AG", "07", "_", "=", "{}"]; 
   return (
     <div className="matrix-glyphs" aria-hidden="true">
       {Array.from({ length: 18 }).map((_, index) => (
@@ -137,12 +137,185 @@ function MatrixGlyphs() {
   );
 }
 
+function MatrixRain() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    const glyphs = "アカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>[]{}";
+    const fontSize = 16;
+    let width = 0;
+    let height = 0;
+    let drops: number[] = [];
+    let frame = 0;
+
+    const resize = () => {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * pixelRatio;
+      canvas.height = height * pixelRatio;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      drops = Array.from({ length: Math.ceil(width / fontSize) }, () => Math.random() * -40);
+      context.fillStyle = "#090b08";
+      context.fillRect(0, 0, width, height);
+    };
+
+    const draw = () => {
+      context.fillStyle = "rgba(9, 11, 8, 0.075)";
+      context.fillRect(0, 0, width, height);
+      context.font = `${fontSize}px "DM Mono", monospace`;
+
+      drops.forEach((drop, column) => {
+        const character = glyphs[Math.floor(Math.random() * glyphs.length)];
+        const x = column * fontSize;
+        const y = drop * fontSize;
+        context.fillStyle = Math.random() > 0.92 ? "rgba(217, 255, 145, 0.68)" : "rgba(184, 242, 58, 0.22)";
+        context.fillText(character, x, y);
+        if (y > height && Math.random() > 0.976) drops[column] = 0;
+        else drops[column] += 0.44 + Math.random() * 0.3;
+      });
+
+      frame = window.requestAnimationFrame(draw);
+    };
+
+    resize();
+    window.addEventListener("resize", resize);
+    frame = window.requestAnimationFrame(draw);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="matrix-rain" aria-hidden="true" />;
+}
+
 function SectionLabel({ index, children }: { index: string; children: string }) {
   return (
     <div className="section-label">
       <span className="section-index">{index}</span>
       <span>{children}</span>
     </div>
+  );
+}
+
+function TerminalEgg() {
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState("");
+  const [lines, setLines] = useState([
+    "AGKBUILDS terminal // v1.0",
+    "background index loaded. type 'help' to browse.",
+  ]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      const isTyping = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+      if ((event.key === "~" || event.key === "/") && !isTyping) {
+        event.preventDefault();
+        setOpen(true);
+      }
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (open) window.setTimeout(() => inputRef.current?.focus(), 40);
+  }, [open]);
+
+  const runCommand = (rawCommand: string) => {
+    const command = rawCommand.trim().toLowerCase();
+    if (!command) return;
+    const responses: Record<string, string[]> = {
+      help: [
+        "available commands:",
+        "  whoami       quick identity readout",
+        "  background   the short professional story",
+        "  skills       digital + physical toolkit",
+        "  experience   timeline from 2009 to now",
+        "  work         selected résumé threads",
+        "  contact      open a line to Dylan",
+        "  clear        wipe the terminal",
+      ],
+      whoami: [
+        "Dylan Borgen // owner + IT consultant",
+        "AGKBuilds // San Antonio, Texas",
+        "builder, troubleshooter, field operator",
+      ],
+      background: [
+        "AGKBuilds is Dylan's independent practice for IT consulting and hands-on problem solving.",
+        "The range runs from computer systems, data recovery, networks, websites, and phone repair",
+        "to remodeling, excavation, landscaping, welding, maintenance, and customer care.",
+      ],
+      skills: [
+        "computer build / repair · data recovery · business applications",
+        "network diagnostics · troubleshooting · website design · phone repair",
+        "Excel · Photoshop · OBS Studio · PhotoPad · heavy equipment",
+        "painting · carpentry · landscaping · hardscaping · concrete · fencing · welding",
+        "90 WPM · customer service · practical problem solving",
+      ],
+      experience: [
+        "2025—now  AGKBuilds / Owner · IT Consultant / San Antonio",
+        "2025      UGN / Production · Assembly / Somerset",
+        "2022—25   AGKBuilds / Owner · IT Consultant / San Antonio",
+        "2021—22   Real Star Property Management / Remodeling / Killeen",
+        "2019—21   R&S Excavation / Heavy Equipment Operator / San Antonio",
+        "2009—19   Central Texas field work, crew leadership, customer care, maintenance",
+      ],
+      work: [
+        "01  IT services       systems, networks, websites, repair",
+        "02  Field work        landscaping, repairs, make-readies, roofing",
+        "03  Construction      excavation, equipment, job-site leadership",
+        "04  Remodeling        windows, cabinets, roofs, floors, demolition",
+        "05  Production        Toyota trunk components / quality targets",
+        "06  Communication     healthcare support, collections, customer care",
+      ],
+      contact: [
+        "email   dylanborgen@gmail.com",
+        "phone   (254) 589-2646",
+        "base    San Antonio, TX",
+        "status  open to practical problems",
+      ],
+    };
+
+    if (command === "clear") {
+      setLines([]);
+    } else {
+      setLines((current) => [
+        ...current,
+        `visitor@agkbuilds:~$ ${rawCommand}`,
+        ...(responses[command] ?? [`command not found: ${command}. try 'help'.`]),
+      ]);
+    }
+    setInput("");
+  };
+
+  return (
+    <>
+      <button className="terminal-trigger" onClick={() => setOpen(true)} aria-label="Open Dylan's interactive terminal">
+        <Terminal size={14} /> <span>open terminal</span> <b>~</b>
+      </button>
+      {open && (
+        <div className="terminal-overlay" role="dialog" aria-modal="true" aria-label="AGKBUILDS interactive terminal" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
+          <div className="terminal-window">
+            <div className="terminal-bar"><span className="terminal-lights"><i /><i /><i /></span><span>visitor@agkbuilds: ~/background</span><button onClick={() => setOpen(false)} aria-label="Close terminal"><X size={15} /></button></div>
+            <div className="terminal-output" aria-live="polite">{lines.map((line, index) => <div key={`${line}-${index}`} className={line.startsWith("visitor@") ? "terminal-command" : "terminal-line"}>{line}</div>)}</div>
+            <form className="terminal-form" onSubmit={(event) => { event.preventDefault(); runCommand(input); }}><span>visitor@agkbuilds:~$</span><input ref={inputRef} value={input} onChange={(event) => setInput(event.target.value)} autoComplete="off" autoCapitalize="none" spellCheck="false" aria-label="Terminal command" /></form>
+            <div className="terminal-hints">try: help · whoami · skills · experience · work · contact · clear</div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -158,16 +331,27 @@ function Home() {
     const move = (event: PointerEvent) => {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.matchMedia("(pointer: coarse)").matches) return;
       const bounds = hero.getBoundingClientRect();
-      const x = ((event.clientX - bounds.left) / bounds.width) * 100;
-      const y = ((event.clientY - bounds.top) / bounds.height) * 100;
+      const x = Math.max(0, Math.min(100, ((event.clientX - bounds.left) / bounds.width) * 100));
+      const y = Math.max(0, Math.min(100, ((event.clientY - bounds.top) / bounds.height) * 100));
       hero.style.setProperty("--pointer-x", `${x}%`);
       hero.style.setProperty("--pointer-y", `${y}%`);
       hero.style.setProperty("--hero-rotate-x", `${(50 - y) * 0.035}deg`);
       hero.style.setProperty("--hero-rotate-y", `${(x - 50) * 0.035}deg`);
     };
 
+    const reset = () => {
+      hero.style.setProperty("--pointer-x", "50%");
+      hero.style.setProperty("--pointer-y", "50%");
+      hero.style.setProperty("--hero-rotate-x", "0deg");
+      hero.style.setProperty("--hero-rotate-y", "0deg");
+    };
+
     hero.addEventListener("pointermove", move);
-    return () => hero.removeEventListener("pointermove", move);
+    hero.addEventListener("pointerleave", reset);
+    return () => {
+      hero.removeEventListener("pointermove", move);
+      hero.removeEventListener("pointerleave", reset);
+    };
   }, []);
 
   const copyEmail = async () => {
@@ -180,6 +364,7 @@ function Home() {
 
   return (
     <main className="site-shell">
+      <MatrixRain />
       <header className="site-header">
         <a className="wordmark" href="#top" onClick={closeMenu} aria-label="AGKBUILDS home">
           <span className="wordmark-cursor" aria-hidden="true">_</span>
@@ -263,6 +448,7 @@ function Home() {
         <div className="contact-panel"><MatrixGlyphs /><div className="contact-content"><SectionLabel index="05" children="Contact / open channel" /><h2>Need a fix?<br /><span>Let’s talk.</span></h2><p>For IT consulting, website work, repair, custom applications, or a practical problem that needs a second set of hands.</p><div className="contact-actions"><a className="button button-primary" href="mailto:dylanborgen@gmail.com">dylanborgen@gmail.com <ArrowUpRight size={16} /></a><a className="copy-button" href="tel:+12545892646"><Phone size={15} /> (254) 589-2646</a><button className="copy-button" onClick={copyEmail}>{copied ? <><Check size={15} /> copied</> : <><Copy size={15} /> copy email</>}</button></div></div><div className="contact-side"><span className="contact-side-label">AGKBUILDS / SAN ANTONIO</span><div className="contact-glyph"><Brackets size={45} strokeWidth={1} /></div><span className="contact-side-note">No gatekeepers.<br />Just a clear next step.</span></div></div>
       </section>
 
+      <TerminalEgg />
       <footer className="site-footer"><a className="wordmark" href="#top"><span className="wordmark-cursor">_</span><span>AGK</span><strong>BUILDS</strong></a><span className="footer-copy">© {new Date().getFullYear()} Dylan Borgen. Built in San Antonio, with intent.</span><div className="footer-links"><a href="mailto:dylanborgen@gmail.com" aria-label="Email"><Mail size={16} /></a></div><a className="back-top" href="#top">BACK TO TOP <MoveUpRight size={14} /></a></footer>
     </main>
   );
